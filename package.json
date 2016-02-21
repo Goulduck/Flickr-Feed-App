@@ -1,0 +1,32 @@
+{
+  "name": "Flickr-Feed",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "start": "watchify src/main.jsx -v -t [ babelify --presets [ react ] ] -o views/js/main.js",
+    "run": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Goulduck/Flickr-Feed-App.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Goulduck/Flickr-Feed-App/issues.git"
+  },
+  "homepage": "https://github.com/Goulduck/Flickr-Feed-App.git",
+  "dependencies": {
+    "babel-preset-react": "^6.5.0",
+    "babelify": "^7.2.0",
+    "react": "^0.14.7",
+    "react-dom": "^0.14.7",
+    "watchify": "^3.7.0",
+    "express":"*",
+    "body-parser": "*",
+    "path":"*",
+    "request":"*",
+    "whatwg-fetch":"*"
+  }
+}
