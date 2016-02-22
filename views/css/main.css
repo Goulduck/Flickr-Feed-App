@@ -1,5 +1,14 @@
+.container{
+  overflow:scroll;
+}
+
+.row{
+  width:6000px;
+}
+
 .col-sm-3{
   padding:6px;
+  width:300px !important;
 }
 
 .inner-col{

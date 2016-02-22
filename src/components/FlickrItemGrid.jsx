@@ -18,7 +18,7 @@ var FlickrItemGrid = React.createClass({
             return <FlickrItem media={item.media} title={item.title} link={item.link} author={item.author} profile={item.author_id} description={item.date_taken} tags={item.tags} />;
         });
 
-        return (<div className="row">{flickrItems}</div>);
+        return (<div className="row-frame"><div className="row">{flickrItems}</div></div>);
 
     }
 });
