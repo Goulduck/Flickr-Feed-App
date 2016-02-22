@@ -1,0 +1,24 @@
+.col-sm-3{
+  padding:6px;
+}
+
+.inner-col{
+  border: 2px solid #ccc;
+  padding: 10px;
+  background-color: #fff;
+  overflow-wrap: break-word;
+  box-shadow: 0 0 10px 0px;
+}
+
+.image-frame{
+  overflow: hidden;
+  height: 200px;
+  border: 1px solid #ccc;
+  line-height: 200px;
+  background: #000;
+}
+
+.image-frame img{
+  width: 100%;
+  vertical-align:center;
+}

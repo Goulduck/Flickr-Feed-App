@@ -27,6 +27,10 @@ app.get('/js/main.js', function(req, res) {
     res.sendFile(path.join(__dirname + '/views/js/main.js'));
 });
 
+app.get('/css/main.css', function(req, res) {
+    res.sendFile(path.join(__dirname + '/views/css/main.css'));
+});
+
 app.get('/', function(req, res) {
   var options={
     url: 'https://api.flickr.com/services/feeds/photos_public.gne?format=json&nojsoncallback=1',
@@ -38,9 +42,8 @@ app.get('/', function(req, res) {
 
   function callback(error, response, body) {
     if (!error && response.statusCode == 200) {
-      var fixedJSON = body.replace('/\\"/g',"'").replace(/\\/g,"");
-
-      var info = JSON.parse(body);
+      var fixedJSON = body.replace(/\\"/g,"'").replace(/\\/g,"");
+      var info = JSON.parse(fixedJSON);
       flickrItems = info.items;
     }
   }

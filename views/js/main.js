@@ -19031,7 +19031,7 @@ module.exports = validateDOMNesting;
 module.exports = require('./lib/React');
 
 },{"./lib/React":53}],159:[function(require,module,exports){
-(function() {
+(function(self) {
   'use strict';
 
   if (self.fetch) {
@@ -19040,7 +19040,7 @@ module.exports = require('./lib/React');
 
   function normalizeName(name) {
     if (typeof name !== 'string') {
-      name = name.toString();
+      name = String(name)
     }
     if (/[^a-z0-9\-#$%&'*+.\^_`|~]/i.test(name)) {
       throw new TypeError('Invalid character in header field name')
@@ -19050,7 +19050,7 @@ module.exports = require('./lib/React');
 
   function normalizeValue(value) {
     if (typeof value !== 'string') {
-      value = value.toString();
+      value = String(value)
     }
     return value
   }
@@ -19149,7 +19149,8 @@ module.exports = require('./lib/React');
         return false
       }
     })(),
-    formData: 'FormData' in self
+    formData: 'FormData' in self,
+    arrayBuffer: 'ArrayBuffer' in self
   }
 
   function Body() {
@@ -19166,8 +19167,19 @@ module.exports = require('./lib/React');
         this._bodyFormData = body
       } else if (!body) {
         this._bodyText = ''
+      } else if (support.arrayBuffer && ArrayBuffer.prototype.isPrototypeOf(body)) {
+        // Only support ArrayBuffers for POST method.
+        // Receiving ArrayBuffers happens via Blobs, instead.
       } else {
         throw new Error('unsupported BodyInit type')
+      }
+
+      if (!this.headers.get('content-type')) {
+        if (typeof body === 'string') {
+          this.headers.set('content-type', 'text/plain;charset=UTF-8')
+        } else if (this._bodyBlob && this._bodyBlob.type) {
+          this.headers.set('content-type', this._bodyBlob.type)
+        }
       }
     }
 
@@ -19233,20 +19245,44 @@ module.exports = require('./lib/React');
     return (methods.indexOf(upcased) > -1) ? upcased : method
   }
 
-  function Request(url, options) {
+  function Request(input, options) {
     options = options || {}
-    this.url = url
+    var body = options.body
+    if (Request.prototype.isPrototypeOf(input)) {
+      if (input.bodyUsed) {
+        throw new TypeError('Already read')
+      }
+      this.url = input.url
+      this.credentials = input.credentials
+      if (!options.headers) {
+        this.headers = new Headers(input.headers)
+      }
+      this.method = input.method
+      this.mode = input.mode
+      if (!body) {
+        body = input._bodyInit
+        input.bodyUsed = true
+      }
+    } else {
+      this.url = input
+    }
 
-    this.credentials = options.credentials || 'omit'
-    this.headers = new Headers(options.headers)
-    this.method = normalizeMethod(options.method || 'GET')
-    this.mode = options.mode || null
+    this.credentials = options.credentials || this.credentials || 'omit'
+    if (options.headers || !this.headers) {
+      this.headers = new Headers(options.headers)
+    }
+    this.method = normalizeMethod(options.method || this.method || 'GET')
+    this.mode = options.mode || this.mode || null
     this.referrer = null
 
-    if ((this.method === 'GET' || this.method === 'HEAD') && options.body) {
+    if ((this.method === 'GET' || this.method === 'HEAD') && body) {
       throw new TypeError('Body not allowed for GET or HEAD requests')
     }
-    this._initBody(options.body)
+    this._initBody(body)
+  }
+
+  Request.prototype.clone = function() {
+    return new Request(this)
   }
 
   function decode(body) {
@@ -19281,32 +19317,55 @@ module.exports = require('./lib/React');
       options = {}
     }
 
-    this._initBody(bodyInit)
     this.type = 'default'
-    this.url = null
     this.status = options.status
     this.ok = this.status >= 200 && this.status < 300
     this.statusText = options.statusText
     this.headers = options.headers instanceof Headers ? options.headers : new Headers(options.headers)
     this.url = options.url || ''
+    this._initBody(bodyInit)
   }
 
   Body.call(Response.prototype)
+
+  Response.prototype.clone = function() {
+    return new Response(this._bodyInit, {
+      status: this.status,
+      statusText: this.statusText,
+      headers: new Headers(this.headers),
+      url: this.url
+    })
+  }
+
+  Response.error = function() {
+    var response = new Response(null, {status: 0, statusText: ''})
+    response.type = 'error'
+    return response
+  }
+
+  var redirectStatuses = [301, 302, 303, 307, 308]
+
+  Response.redirect = function(url, status) {
+    if (redirectStatuses.indexOf(status) === -1) {
+      throw new RangeError('Invalid status code')
+    }
+
+    return new Response(null, {status: status, headers: {location: url}})
+  }
 
   self.Headers = Headers;
   self.Request = Request;
   self.Response = Response;
 
   self.fetch = function(input, init) {
-    // TODO: Request constructor should accept input, init
-    var request
-    if (Request.prototype.isPrototypeOf(input) && !init) {
-      request = input
-    } else {
-      request = new Request(input, init)
-    }
-
     return new Promise(function(resolve, reject) {
+      var request
+      if (Request.prototype.isPrototypeOf(input) && !init) {
+        request = input
+      } else {
+        request = new Request(input, init)
+      }
+
       var xhr = new XMLHttpRequest()
 
       function responseURL() {
@@ -19360,7 +19419,7 @@ module.exports = require('./lib/React');
     })
   }
   self.fetch.polyfill = true
-})();
+})(typeof self !== 'undefined' ? self : this);
 
 },{}],160:[function(require,module,exports){
 var React = require('react');
@@ -19372,45 +19431,53 @@ var FlickrItem = React.createClass({
     return React.createElement(
       "div",
       { className: "col-sm-3" },
-      React.createElement("img", { src: this.props.media.m }),
       React.createElement(
-        "h4",
-        null,
+        "div",
+        { className: "inner-col" },
         React.createElement(
-          "a",
-          { href: this.props.link },
-          this.props.title
+          "div",
+          { className: "image-frame" },
+          React.createElement("img", { src: this.props.media.m })
         ),
-        " by ",
         React.createElement(
-          "a",
-          { href: "https://www.flickr.com/photos/" + this.props.profile },
-          this.props.author.slice(19, this.props.author.length - 1)
-        )
-      ),
-      React.createElement(
-        "div",
-        null,
-        React.createElement(
-          "p",
-          null,
-          "Date taken: ",
-          this.props.description
-        )
-      ),
-      React.createElement(
-        "div",
-        null,
-        React.createElement(
-          "p",
+          "h4",
           null,
           React.createElement(
-            "strong",
-            null,
-            "Tags:"
+            "a",
+            { href: this.props.link },
+            this.props.title
           ),
-          " ",
-          this.props.tags
+          " by ",
+          React.createElement(
+            "a",
+            { href: "https://www.flickr.com/photos/" + this.props.profile },
+            this.props.author.slice(19, this.props.author.length - 1)
+          )
+        ),
+        React.createElement(
+          "div",
+          null,
+          React.createElement(
+            "p",
+            null,
+            "Date taken: ",
+            this.props.description
+          )
+        ),
+        React.createElement(
+          "div",
+          null,
+          React.createElement(
+            "p",
+            null,
+            React.createElement(
+              "strong",
+              null,
+              "Tags:"
+            ),
+            " ",
+            this.props.tags
+          )
         )
       )
     );
@@ -19436,6 +19503,7 @@ var FlickrItemGrid = React.createClass({
         }.bind(this));
     },
     render: function () {
+
         var flickrItems = this.state.flickritems.map(function (item) {
             return React.createElement(FlickrItem, { media: item.media, title: item.title, link: item.link, author: item.author, profile: item.author_id, description: item.date_taken, tags: item.tags });
         });

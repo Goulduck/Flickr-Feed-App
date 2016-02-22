@@ -13,6 +13,7 @@ var FlickrItemGrid = React.createClass({
         }.bind(this));
     },
     render: function() {
+
         var flickrItems = this.state.flickritems.map(function(item) {
             return <FlickrItem media={item.media} title={item.title} link={item.link} author={item.author} profile={item.author_id} description={item.date_taken} tags={item.tags} />;
         });
